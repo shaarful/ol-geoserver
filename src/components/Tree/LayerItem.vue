@@ -9,6 +9,7 @@ export default {
   },
   methods: {
     onInput(evt: any) {
+      //@ts-ignore
       this.layer.setVisible(evt.target.checked);
     }
   }

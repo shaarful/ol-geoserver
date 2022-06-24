@@ -20,22 +20,23 @@ export default {
     ...mapState(useMapStore, ['map'])
   },
   methods: {
-    onChangeVisibility(val, layer) {
+    onChangeVisibility(val: any, layer: any) {
       console.log(val);
     }
   },
   watch: {
-    map(map) {
-    let layers = []
+    map(map: any) {
+      let layers: any = []
 
-      map.getLayers().forEach(layer => {
+      map.getLayers().forEach((layer: any) => {
         layers.push({
           name: layer.get('name'),
           layer: layer
         });
       });
 
-    this.layerList = layers.reverse();
+      //@ts-ignore
+      this.layerList = layers.reverse();
 
     }
   },

@@ -8,6 +8,7 @@ import {defineComponent} from "vue";
 import {fromLonLat} from "ol/proj";
 import {useMapStore} from "@/stores/map"
 import {mapStores} from "pinia";
+import {MyTileLayer} from "@/classes/my-tile-layer";
 
 export default defineComponent({
   name: "MapApp",
@@ -51,7 +52,7 @@ export default defineComponent({
   methods: {
     getTileLayers() {
       return this.layerList.map(layer => {
-        return new TileLayer({
+        return new MyTileLayer({
           name: layer.name || layer.id,
           source: new TileWMS({
             url: "https://services.datafordeler.dk/Dkskaermkort/topo_skaermkort/1.0.0/wms?username=GCXPTROVSJ&password=f8B9qGYExV!iuxJ",
@@ -72,7 +73,7 @@ export default defineComponent({
 
     const map = new Map({
       layers: [
-        new TileLayer({
+        new MyTileLayer({
           name: 'OSM',
           source: new OSM(),
         }),
