@@ -49,8 +49,11 @@ export default {
 </script>
 
 <template>
-  <div class="layer-container pl-2 pt-2">
-    <LayerItem :layer="layer.layer" v-for="layer in layerList">{{ layer.name }}</LayerItem>
+  <div class="layer-container bg-slate-100 flex flex-col">
+    <div class="text-3xl px-2 py-3 bg-green-100 border-solid border-2 border-green-200">Layers</div>
+    <div class="pt-2 flex-1 pl-2">
+      <LayerItem :layer="layer.layer" v-for="layer in layerList">{{ layer.name }}</LayerItem>
+    </div>
   </div>
 </template>
 

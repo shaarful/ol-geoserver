@@ -19,7 +19,7 @@ export default {
 <template>
   <div>
     <input @input="onInput" :checked="layer.getVisible()" type="checkbox" class="mr-1">
-    <label>
+    <label class="text-ellipsis overflow-hidden">
       <slot></slot>
     </label>
 
