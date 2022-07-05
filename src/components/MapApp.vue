@@ -7,23 +7,21 @@ import {defineComponent} from "vue";
 import {fromLonLat} from "ol/proj";
 import {useMapStore} from "@/stores/map"
 import {mapStores} from "pinia";
-import {MyTileLayer} from "@/classes/my-tile-layer";
+import {MyTileLayer} from "@/classes/my-tile.layer";
 import VectorSource from "ol/source/Vector";
 import GeoJSON from "ol/format/GeoJSON";
 import {bbox as bboxStrategy} from 'ol/loadingstrategy';
-import {MyVectorLayer} from "@/classes/my-vector-layer";
-import {defaults as defaultControls, MousePosition} from 'ol/control';
-import {Fill, Stroke, Style} from "ol/style";
+import {MyVectorLayer} from "@/classes/my-vector.layer";
+import {defaults as defaultControls, MousePosition, ScaleLine} from 'ol/control';
+import {Fill, Icon, Stroke, Style} from "ol/style";
 import CircleStyle from "ol/style/Circle";
 import {Overlay} from "ol";
-import MeasurementControl from "@/classes/measurement-control";
+import MeasurementControl from "@/classes/measurement.control";
 import type {PopupProperty} from "@/models/PopupProperty";
+import PrintControl from "@/classes/print.control";
 
-// https://geoserver.qler.dk/geoserver/qler/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=qler%3Aledninger&outputFormat=application%2Fjson
-//
-// https://geoserver.qler.dk/geoserver/qler/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=qler%3Abrandhaner&maxFeatures=50&outputFormat=application%2Fjson
-//
-//  EPSG:25832
+import a from "@fortawesome/fontawesome-free/svgs/solid/address-book.svg"
+import {toSize} from "ol/size";
 
 export default defineComponent({
   name: "MapApp",
@@ -139,16 +137,82 @@ export default defineComponent({
   },
   mounted() {
 
+
     const me = this;
 
     this.overlay.setElement(document.getElementById('popup') as any)
+    const measure = new MeasurementControl();
+    const scaleLine = new ScaleLine({bar: true, text: true, minWidth: 125});
 
-    const measure = new MeasurementControl({});
 
+    const line = new MyVectorLayer({
+      name: 'Line',
+      source: new VectorSource({
+        format: new GeoJSON(),
+        url: function (extent) {
+          return (
+              //     'https://geoserver.qler.dk/geoserver/qler/ows?' +
+              //     'service=WFS&version=1.0.0&request=GetFeature&' +
+              //     'typeName=qler:ledninger&outputFormat=application/json&srsname=EPSG:25832&' +
+
+              'https://geoserver.qler.dk/geoserver/qler/ows' +
+              // 'http://localhost:2020' +
+              '?service=WFS&version=1.0.0&request=GetFeature&typeName=qler:ledninger&outputFormat=application/json' +
+              '&srsname=EPSG:3857&' +
+              'bbox=' +
+              extent.join(',') +
+              ',EPSG:3857'
+          );
+        },
+        strategy: bboxStrategy,
+      }),
+      style: function (feature: any) {
+        // const color = feature.get('COLOR') || '#eeeeee';
+        // style.getFill().setColor(color);
+        return me.getStyle();
+      },
+    });
+    const point = new MyVectorLayer({
+      name: 'Point',
+      source: new VectorSource({
+        format: new GeoJSON(),
+        url: function (extent) {
+          return (
+              'https://geoserver.qler.dk/geoserver/qler/ows' +
+              // 'http://localhost:2020' +
+              '?service=WFS&version=1.0.0&request=GetFeature&typeName=qler:brandhaner&maxFeatures=50&outputFormat=application/json' +
+              '&srsname=EPSG:3857&' +
+              'bbox=' +
+              extent.join(',') +
+              ',EPSG:3857'
+          );
+        },
+        strategy: bboxStrategy,
+      }),
+      style: function (feature: any) {
+        // const color = feature.get('COLOR') || '#eeeeee';
+        // style.getFill().setColor(color);
+
+        // let style = new Style({
+        //   image: new Icon({
+        //     anchor: [0.5, 46],
+        //     anchorXUnits: 'fraction',
+        //     anchorYUnits: 'pixels',
+        //     src: a,
+        //     size: [80, 60]
+        //   }),
+        // });
+        // return style;
+
+        return me.getStyle();
+      },
+    });
 
     const map = new Map({
       controls: defaultControls().extend([
         // new MousePosition({projection: 'EPSG:4326'}),
+        scaleLine,
+        new PrintControl({scaleLine}),
         measure
       ]),
       layers: [
@@ -173,56 +237,10 @@ export default defineComponent({
         //     serverType: 'geoserver',
         //   })
         // }),
-        new MyVectorLayer({
-          name: 'Line',
-          source: new VectorSource({
-            format: new GeoJSON(),
-            url: function (extent) {
-              return (
-                  //     'https://geoserver.qler.dk/geoserver/qler/ows?' +
-                  //     'service=WFS&version=1.0.0&request=GetFeature&' +
-                  //     'typeName=qler:ledninger&outputFormat=application/json&srsname=EPSG:25832&' +
 
-                  'https://geoserver.qler.dk/geoserver/qler/ows' +
-                  // 'http://localhost:2020' +
-                  '?service=WFS&version=1.0.0&request=GetFeature&typeName=qler:ledninger&outputFormat=application/json' +
-                  '&srsname=EPSG:3857&' +
-                  'bbox=' +
-                  extent.join(',') +
-                  ',EPSG:3857'
-              );
-            },
-            strategy: bboxStrategy,
-          }),
-          style: function (feature: any) {
-            // const color = feature.get('COLOR') || '#eeeeee';
-            // style.getFill().setColor(color);
-            return me.getStyle();
-          },
-        }),
-        new MyVectorLayer({
-          name: 'Point',
-          source: new VectorSource({
-            format: new GeoJSON(),
-            url: function (extent) {
-              return (
-                  'https://geoserver.qler.dk/geoserver/qler/ows' +
-                  // 'http://localhost:2020' +
-                  '?service=WFS&version=1.0.0&request=GetFeature&typeName=qler:brandhaner&maxFeatures=50&outputFormat=application/json' +
-                  '&srsname=EPSG:3857&' +
-                  'bbox=' +
-                  extent.join(',') +
-                  ',EPSG:3857'
-              );
-            },
-            strategy: bboxStrategy,
-          }),
-          style: function (feature: any) {
-            // const color = feature.get('COLOR') || '#eeeeee';
-            // style.getFill().setColor(color);
-            return me.getStyle();
-          },
-        }),
+        line,
+        point
+
       ],
       target: 'map',
       view: new View({
@@ -277,23 +295,31 @@ export default defineComponent({
       }
     });
 
-
-    // map.on('pointermove', function (e) {
-    //   if (e.dragging) {
-    //     return;
-    //   }
-    //   const pixel = map.getEventPixel(e.originalEvent);
-    //   const hit = map.hasFeatureAtPixel(pixel);
-    //   map.getTarget().style.cursor = hit ? 'pointer' : '';
-    // });
-
-
   }
 })
 </script>
 
 <template>
-  <div class="map" id="map"></div>
+  <!--  <div class="map" id="map"></div>-->
+
+  <div class="wrapper">
+    <div id="map" class="map">
+      <div class="legend p-3 rounded bg-white">
+        <div>Legend</div>
+        <div class="legend-content">
+          <div class="m-2 legend-item">
+            <span class="mr-5 relative"><span class="line"></span></span>
+            <span>Line</span>
+          </div>
+          <div class="m-2 legend-item">
+            <span class="relative mr-8"><span class="point"></span></span>
+            <span>Point</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="popup" class="ol-popup bg-white p-2 rounded">
     <div class="flex justify-between">
       <div class="bg-green-100 flex-1 px-2 rounded">Properties</div>
@@ -310,16 +336,39 @@ export default defineComponent({
   </div>
 </template>
 
-<style scoped>
-.map {
-  width: var(--map-width);
-  height: var(--content-height);
-}
+<style scoped lang="scss">
+.legend {
+  position: absolute;
+  right: 1rem;
+  bottom: 2rem;
+  z-index: 1;
 
-/*#popup-content{*/
-/*  display: flex;*/
-/*  flex-direction: column;*/
-/*}*/
+  .legend-content {
+    .line {
+      width: 5px;
+      height: 20px;
+      background-color: rgba(164, 75, 222, 0.5);
+      border: 1px solid rgba(164, 75, 222, 0.5);
+      transform: rotate(45deg);
+      position: absolute;
+      left: 50%;
+    }
+
+    .point {
+      width: 20px;
+      height: 20px;
+      background-color: rgba(63, 205, 116, 0.7);
+      border: 3px solid rgba(3, 116, 47, 0.7);
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    .legend-item {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
 
 
 </style>
@@ -338,11 +387,26 @@ export default defineComponent({
 }
 
 .ol-measurement {
-  right: 1rem;
+  right: .5rem;
   left: unset;
 }
 
-//.ol-measurement button.active {
-//  background-color: rgba(0, 60, 136, 1);
-//}
+.ol-print {
+  right: 2.5rem;
+  left: unset;
+}
+
+
+.wrapper {
+  max-width: var(--map-width);
+  width: var(--map-width);
+  height: var(--content-height);
+  overflow: hidden;
+
+  .map {
+    width: 100%;
+    height: 100%;
+  }
+}
+
 </style>

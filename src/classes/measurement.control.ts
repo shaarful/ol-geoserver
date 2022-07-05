@@ -5,7 +5,7 @@ import CircleStyle from "ol/style/Circle";
 import {LineString, Polygon} from "ol/geom";
 import {unByKey} from "ol/Observable";
 import VectorSource from "ol/source/Vector";
-import {MyVectorLayer} from "@/classes/my-vector-layer";
+import {MyVectorLayer} from "@/classes/my-vector.layer";
 import {getArea, getLength} from "ol/sphere";
 import {Overlay} from "ol";
 
@@ -20,7 +20,7 @@ export default class MeasurementControl extends Control {
 
     source = new VectorSource();
 
-    constructor(opt_options: any) {
+    constructor(opt_options?: any) {
         const options = opt_options || {};
 
         const line = document.createElement('button');
@@ -60,7 +60,7 @@ export default class MeasurementControl extends Control {
         });
 
 
-        line.addEventListener('click', this.handleMeasurement.bind(this) );
+        line.addEventListener('click', this.handleMeasurement.bind(this));
         polygon.addEventListener('click', this.handleMeasurement.bind(this));
 
 
