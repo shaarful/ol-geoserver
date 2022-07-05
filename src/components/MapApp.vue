@@ -13,15 +13,18 @@ import GeoJSON from "ol/format/GeoJSON";
 import {bbox as bboxStrategy} from 'ol/loadingstrategy';
 import {MyVectorLayer} from "@/classes/my-vector.layer";
 import {defaults as defaultControls, MousePosition, ScaleLine} from 'ol/control';
-import {Fill, Icon, Stroke, Style} from "ol/style";
+import {Fill, Icon, Stroke, Style, Text as textStyle} from "ol/style";
 import CircleStyle from "ol/style/Circle";
-import {Overlay} from "ol";
+import {Feature, Overlay} from "ol";
 import MeasurementControl from "@/classes/measurement.control";
 import type {PopupProperty} from "@/models/PopupProperty";
 import PrintControl from "@/classes/print.control";
 
-import a from "@fortawesome/fontawesome-free/svgs/solid/address-book.svg"
-import {toSize} from "ol/size";
+// https://geoserver.qler.dk/geoserver/qler/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=qler:brandhaner&maxFeatures=50&outputFormat=application/json
+// https://geoserver.qler.dk/geoserver/qler/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=qler:ledninger&outputFormat=application/json
+
+import sq from "@/assets/square.svg";
+
 
 export default defineComponent({
   name: "MapApp",
@@ -80,6 +83,8 @@ export default defineComponent({
           }
         }
       },
+      lineProps: ['PVC', 'PE', 'PEM', 'xx', 'PEL'],
+      lineColors: ['#B03A2E', '#424949', '#2874A6', '#117A65', '#D68910'],
     }
   },
   computed: {
@@ -137,7 +142,6 @@ export default defineComponent({
   },
   mounted() {
 
-
     const me = this;
 
     this.overlay.setElement(document.getElementById('popup') as any)
@@ -166,9 +170,22 @@ export default defineComponent({
         },
         strategy: bboxStrategy,
       }),
-      style: function (feature: any) {
+      style: function (feature: Feature) {
+        // console.log(feature.getProperties());
         // const color = feature.get('COLOR') || '#eeeeee';
         // style.getFill().setColor(color);
+
+        let prop = feature.getProperties()["ler_udvendigMateriale"];
+        let index = me.lineProps.indexOf(prop);
+        if (index !== -1) {
+          return new Style({
+            stroke: new Stroke({
+              color: me.lineColors[index],
+              width: 3,
+            })
+          });
+        }
+
         return me.getStyle();
       },
     });
@@ -189,22 +206,38 @@ export default defineComponent({
         },
         strategy: bboxStrategy,
       }),
-      style: function (feature: any) {
+      style: function (feature: Feature) {
+
         // const color = feature.get('COLOR') || '#eeeeee';
         // style.getFill().setColor(color);
 
-        // let style = new Style({
-        //   image: new Icon({
-        //     anchor: [0.5, 46],
-        //     anchorXUnits: 'fraction',
-        //     anchorYUnits: 'pixels',
-        //     src: a,
-        //     size: [80, 60]
-        //   }),
-        // });
-        // return style;
 
-        return me.getStyle();
+        // return new Style({
+        //   text: new textStyle({
+        //     text: '\uf1ad',
+        //     font: '900 18px Font Awesome 6 Free',
+        //     // textBaseline: 'Bottom',
+        //     // fill: new Fill({
+        //     //   color: 'white',
+        //     // })
+        //   })
+        // });
+
+
+        if (feature.getProperties().ler_type === 'tapsted') {
+
+          return new Style({
+            image: new Icon({
+              src: sq,
+              color: 'rgba(63, 205, 116, 0.7)',
+              imgSize: [20, 20],
+              crossOrigin: 'anonymous',
+            }),
+          });
+        } else {
+          return me.getStyle();
+        }
+
       },
     });
 
@@ -259,9 +292,9 @@ export default defineComponent({
 
     const handlePointerMoveLocal = (event: any) => {
       const features = map.getFeaturesAtPixel(event.pixel);
-      if (feature) {
-        feature.setStyle(this.getStyle())
-      }
+      // if (feature) {
+      //   // feature.setStyle(oldStyle);
+      // }
       me.props = [];
       me.overlay.setPosition(undefined);
       if (features.length == 0) {
@@ -270,7 +303,8 @@ export default defineComponent({
       feature = features[0];
       const coordinate = event.coordinate;
       const properties = feature.getProperties();
-      feature.setStyle(this.getStyle('hltColor'))
+
+      // feature.setStyle(this.getStyle('hltColor'));
       for (let prop in properties) {
         if (!me.notIn.includes(prop) && properties[prop]) {
           me.props.push({
@@ -307,14 +341,34 @@ export default defineComponent({
       <div class="legend p-3 rounded bg-white">
         <div>Legend</div>
         <div class="legend-content">
-          <div class="m-2 legend-item">
-            <span class="mr-5 relative"><span class="line"></span></span>
-            <span>Line</span>
+          <div class="mb-2 ml-2">Line (Ler Udvendig Materiale)</div>
+          <div v-for="(a, i) in lineProps" class="legend-item">
+              <span class="mr-5 relative">
+                <span class="line" :style="{backgroundColor: lineColors[i]+'!important'}"></span>
+              </span>
+            <span>{{ a }}</span>
           </div>
-          <div class="m-2 legend-item">
-            <span class="relative mr-8"><span class="point"></span></span>
-            <span>Point</span>
+          <div class="legend-item">
+              <span class="mr-5 relative">
+                <span class="line"></span>
+              </span>
+            <span>Others</span>
           </div>
+
+          <div class="my-2 ml-2">Point (Ler Type)</div>
+          <div class="legend-item">
+              <span class="mr-5 relative">
+                <img src="@/assets/square.svg" class="square absolute left-2/4"/>
+              </span>
+            <span>Tapsted</span>
+          </div>
+          <div class="legend-item">
+              <span class="mr-5 relative">
+                <span class="point"></span>
+              </span>
+            <span>Others</span>
+          </div>
+
         </div>
       </div>
     </div>
@@ -361,6 +415,7 @@ export default defineComponent({
       border: 3px solid rgba(3, 116, 47, 0.7);
       border-radius: 50%;
       position: absolute;
+      left: 50%;
     }
 
     .legend-item {
